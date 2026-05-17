@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity Web Player | Taif</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+</body>
+  <div id="unity-container">
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+    <div id="unity-loading-bar">
+      <div id="unity-progress-bar-empty">
+        <div id="unity-progress-bar-full"></div>
+      </div>
+      <div id="unity-loading-text">Loading 0%</div>
+    </div>
+  </div>
+  <script>
+    // ── Build config — Unity template variables are replaced at build time ──
+    var BUILD_URL = "Build";
+    var config = {
+      dataUrl:            BUILD_URL + "/{{{ DATA_FILENAME }}}",
+      frameworkUrl:       BUILD_URL + "/{{{ FRAMEWORK_FILENAME }}}",
+      codeUrl:            BUILD_URL + "/{{{ CODE_FILENAME }}}",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName:        "{{{ COMPANY_NAME }}}",
+      productName:        "{{{ PRODUCT_NAME }}}",
+      productVersion:     "{{{ PRODUCT_VERSION }}}",
+    };
+    var canvas      = document.getElementById("unity-canvas");
+    var loadingBar  = document.getElementById("unity-loading-bar");
+    var progressBar = document.getElementById("unity-progress-bar-full");
+    var loadingText = document.getElementById("unity-loading-text");
+    // Resize canvas to fill window on mobile
+    function resizeCanvas() {
+      canvas.style.width  = window.innerWidth  + "px";
+      canvas.style.height = window.innerHeight + "px";
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+    // ── Flutter → Unity public API ────────────────────────────────────────
+    //   Flutter calls: controller.evaluateJavascript("sendMessageToUnity('...')")
+    window.sendMessageToUnity = function (json) {
+      return window.sendToUnity("UnityJSBridge", "OnMessageFromFlutter", json);
+    };
+    window.sendToUnity = function (gameObject, method, value) {
+      if (!window.unityInstance) {
+        console.warn("[HTML] sendToUnity: unityInstance not ready yet");
+        return false;
+      }
+      console.log("[HTML] sendToUnity →", gameObject, method, value);
+      window.unityInstance.SendMessage(gameObject, method, value);
+      return true;
+    };
+    // ── Unified Flutter notifier (auto-detects WebView type) ─────────────
+    window.notifyFlutter = function (payload) {
+      var msg = (typeof payload === "string") ? payload : JSON.stringify(payload);
+      if (window.flutter_inappwebview) {          // flutter_inappwebview
+        window.flutter_inappwebview.callHandler("UnityChannel", msg);
+      } else if (window.UnityChannel) {            // webview_flutter
+        window.UnityChannel.postMessage(msg);
+      } else {
+        window.parent.postMessage({ source: "unity", payload: msg }, "*");
+      }
+    };
+    // ── Unity jslib event — fired when C# bridge Start() runs ─────────────
+    window.addEventListener("unityReady", function () {
+      console.log("[HTML] unityReady event received — C# bridge is live");///////////////
+      window.notifyFlutter(JSON.stringify({ event: "unityReady" }));
+    });
+    // ── Load Unity ────────────────────────────────────────────────────────
+    var script = document.createElement("script");
+    script.src = BUILD_URL + "/{{{ LOADER_FILENAME }}}";
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (progress) {
+        var pct = Math.round(progress * 100);
+        progressBar.style.width = pct + "%";
+        loadingText.innerHTML   = "Loading " + pct + "%";
+      })
+      .then(function (instance) {
+        // CRITICAL: store globally so sendToUnity() and Flutter eval can reach it
+        window.unityInstance = instance;
+        loadingBar.classList.add("hidden");
+        console.log("[HTML] createUnityInstance resolved — unityInstance is set");
+        window.notifyFlutter(JSON.stringify({ event: "unityLoaded" }));
+      })
+      .catch(function (err) {
+        loadingText.innerHTML = "Load error — check console";
+        console.error("[HTML] createUnityInstance failed:", err);
+        window.notifyFlutter(JSON.stringify({ event: "unityError", error: String(err) }));
+      });
+    };
+   
+    </script>
+</body>
+</html>
