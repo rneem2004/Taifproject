@@ -31,7 +31,7 @@ public class Rotate : MonoBehaviour, IEventSystemHandler
                 if (Physics.Raycast(ray, out hit))
                 {
                     // This method is used to send data to Flutter
-                    UnityMessageManager.Instance.SendMessageToFlutter("The cube feels touched.");
+                    //UnityMessageManager.Instance.SendMessageToFlutter("The cube feels touched.");
                 }
             }
         }

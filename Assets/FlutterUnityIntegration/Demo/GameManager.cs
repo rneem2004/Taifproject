@@ -10,7 +10,7 @@ public class GameManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        gameObject.AddComponent<UnityMessageManager>();
+        //gameObject.AddComponent<UnityMessageManager>();
     }
 
     // Update is called once per frame

@@ -27,21 +27,21 @@ public class SceneLoader : MonoBehaviour
     public void MessengerFlutter()
     {
 
-        UnityMessageManager.Instance.SendMessageToFlutter("Hey man");
+        //UnityMessageManager.Instance.SendMessageToFlutter("Hey man");
     }
 
     public void SwitchNative()
     {
-        UnityMessageManager.Instance.ShowHostMainWindow();
+        //UnityMessageManager.Instance.ShowHostMainWindow();
     }
 
     public void UnloadNative()
     {
-        UnityMessageManager.Instance.UnloadMainWindow();
+        //UnityMessageManager.Instance.UnloadMainWindow();
     }
 
     public void QuitNative()
     {
-        UnityMessageManager.Instance.QuitUnityWindow();
+        //UnityMessageManager.Instance.QuitUnityWindow();
     }
 }
